@@ -2,6 +2,7 @@
 
 input_file_train = '/Users/daniel/PycharmProjects/bank-predict/data/Train_400000.csv'
 input_file_test = '/Users/daniel/PycharmProjects/bank-predict/data/Test_200000data.csv'
+input_file_train_shuffle = '/Users/daniel/PycharmProjects/bank-predict/data/Train_shuffle_400000.csv'
 
 # 预处理数据
 integer_stats_path = '/Users/daniel/PycharmProjects/bank-predict/data/integer_stats.csv'

@@ -77,6 +77,7 @@ def compute_integer_stats(input_file, chunk_size):
     stats_integer.drop(['sq_sum'], axis=1, inplace=True)
 
     print(stats_integer)
+
     stats_integer.to_csv(config.integer_stats_path)
     print("Total Clicks:" + str(clicks) + " Total Impressions:" + str(impressions))
 
