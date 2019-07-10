@@ -22,6 +22,14 @@ test_file = range(61)
 
 
 def transform(input_file, keep_features, stats, file_type='train'):
+    """
+
+    :param input_file: 输入的数据集
+    :param keep_features: 一个列表：[I1,I2,I3...C1,C2,C3...]
+    :param stats: 统计结果，两个文件
+    :param file_type:
+    :return:
+    """
     data = pd.read_csv(input_file)
 
     data_id = data['Id']
@@ -49,9 +57,12 @@ def transform(input_file, keep_features, stats, file_type='train'):
     # Mean normalization 归一化
     data_feature_integer = (data_integer.values.astype('float') - stats['integer']['mean'].values) / stats['integer'][
         'std'].values
+
+    # print("归一化之后的整数特征输入：", data_feature_integer)
     # Replace NaN with mean value (0)
     # stats_mean = np.tile(stats['integer']['mean'].values, (data_feature_integer.shape[0],1))
     data_feature_integer = np.where(~np.isnan(data_feature_integer), data_feature_integer, 0)
+    # print("填充0之后的整数特征输入：", data_feature_integer)
 
     # Truncate large integer values to 5x std. dev
     data_feature_integer = np.minimum(data_feature_integer, 2 * stats['integer']['std'].values)
@@ -73,8 +84,8 @@ def transform(input_file, keep_features, stats, file_type='train'):
         # cu_std = np.std(data_integer_square_features[i + i + i])
         # data_integer_square_features[i + i + i] = (data_integer_square_features[i + i + i] - cu_mean)/cu_std
 
+    # 平方特征，I1I1,I2I2...I13I13，是之前的整数特征的平方值，然后再归一化
     data_integer_square_features.drop(keep_integer_features, inplace=True, axis=1)
-
     # log(1+f) integer features
     data_integer_log_features = np.log(1 + data_feature_integer)
 
@@ -93,9 +104,10 @@ def transform(input_file, keep_features, stats, file_type='train'):
     data_feature = []
     for (x, y) in zip(data_feature_integer, data_feature_category):
         # print("yyyyyy:", y)
-        x.update(y)
+        # print("xxxxxx:", x)
+        y.update(x)
         # print("yyyyyyyyyyyy:", y)
-        data_feature.append(x)
+        data_feature.append(y)
     # data_feature = [dict(x.items() + y.items()) for (x, y) in zip(data_feature_integer, data_feature_category)]
 
     # Hash features
@@ -203,26 +215,38 @@ def main():
     # Predict test data
     with open('test_pred.csv', 'w') as f:
         f.write('Id,Predicted\n')
-        for j in test_file:
-            test_file_name = '/Users/daniel/PycharmProjects/bank-predict/data/{0}{1}.csv'.format(test_file_prefix,
-                                                                                                 str(j).zfill(2))
-            print('Predicting file' + test_file_name)
 
-            X_test, id_test = transform(test_file_name, all_features, stats, file_type='test')
+        # test_file_name =
+        # '/Users/daniel/PycharmProjects/bank-predict/data/{0}{1}.csv'.format(test_file_prefix,str(j).zfill(2))
 
-            if l1_feature_selection:
-                X_test = l1_clf.transform(X_test)
+        test_file_name = '/Users/daniel/PycharmProjects/bank-predict/data/Test_200000data.csv'
+        print('Predicting file:' + test_file_name)
 
-            y_test_predict = clf.predict_proba(X_test)
+        X_test, id_test = transform(test_file_name, all_features, stats, file_type='test')
 
-            # Probability of a click
-            y_test_prob = y_test_predict[:, 1]
-            y_out = np.vstack([id_test, y_test_prob]).transpose()
+        if l1_feature_selection:
+            X_test = l1_clf.transform(X_test)
 
-            np.savetxt(f, y_out, delimiter=",", fmt=['%d', '%.4f'])
+        y_test_predict = clf.predict_proba(X_test)
+        count = 0
 
-            # Garbage collection
-            gc.collect()
+        # Probability of a click
+        y_test_prob = y_test_predict[:, 1]
+        res_list = []
+        print("y_test_prob:", y_test_prob)
+        for item in y_test_prob:
+            if item > 0.5:
+                count += 1
+                res_list.append(1)
+            else:
+                res_list.append(0)
+
+        y_out = np.vstack([id_test, res_list]).transpose()
+
+        np.savetxt(f, y_out, delimiter=",", fmt=['%d', '%d'])
+        print("1的总数：", count)
+        # Garbage collection
+        gc.collect()
 
 
 main()
